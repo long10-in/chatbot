@@ -1,9 +1,9 @@
-export const DEFAULT_CHAT_MODEL = "gemini-2.0-flash";
+export const DEFAULT_CHAT_MODEL = "llama-3.3-70b-versatile";
 
 export const titleModel = {
-  id: "gemini-2.0-flash-lite",
-  name: "Gemini 2.0 Flash Lite",
-  provider: "google",
+  id: "llama-3.1-8b-instant",
+  name: "Llama 3.1 8B Instant",
+  provider: "groq",
   description: "Fast model for title generation",
 };
 
@@ -24,36 +24,36 @@ export type ChatModel = {
 
 export const chatModels: ChatModel[] = [
   {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
-    provider: "google",
-    description: "Fast and capable model with tool use and vision",
+    id: "llama-3.3-70b-versatile",
+    name: "Llama 3.3 70B",
+    provider: "groq",
+    description: "Most capable model with tool use",
   },
   {
-    id: "gemini-2.0-flash-lite",
-    name: "Gemini 2.0 Flash Lite",
-    provider: "google",
-    description: "Lightweight, fastest model for everyday tasks",
+    id: "llama-3.1-8b-instant",
+    name: "Llama 3.1 8B Instant",
+    provider: "groq",
+    description: "Fastest model for everyday tasks",
   },
   {
-    id: "gemini-1.5-flash",
-    name: "Gemini 1.5 Flash",
-    provider: "google",
-    description: "Balanced speed and quality with long context",
+    id: "openai/gpt-oss-120b",
+    name: "GPT OSS 120B",
+    provider: "groq",
+    description: "Open-source 120B reasoning model",
   },
   {
-    id: "gemini-1.5-pro",
-    name: "Gemini 1.5 Pro",
-    provider: "google",
-    description: "Most capable model for complex reasoning",
+    id: "openai/gpt-oss-20b",
+    name: "GPT OSS 20B",
+    provider: "groq",
+    description: "Compact open-source model",
   },
 ];
 
-const GEMINI_CAPABILITIES: Record<string, ModelCapabilities> = {
-  "gemini-2.0-flash": { tools: true, vision: true, reasoning: false },
-  "gemini-2.0-flash-lite": { tools: true, vision: true, reasoning: false },
-  "gemini-1.5-flash": { tools: true, vision: true, reasoning: false },
-  "gemini-1.5-pro": { tools: true, vision: true, reasoning: false },
+const GROQ_CAPABILITIES: Record<string, ModelCapabilities> = {
+  "llama-3.3-70b-versatile": { tools: true, vision: false, reasoning: false },
+  "llama-3.1-8b-instant": { tools: true, vision: false, reasoning: false },
+  "openai/gpt-oss-120b": { tools: true, vision: false, reasoning: true },
+  "openai/gpt-oss-20b": { tools: true, vision: false, reasoning: true },
 };
 
 export async function getCapabilities(): Promise<
@@ -62,7 +62,7 @@ export async function getCapabilities(): Promise<
   return Object.fromEntries(
     chatModels.map((model) => [
       model.id,
-      GEMINI_CAPABILITIES[model.id] ?? {
+      GROQ_CAPABILITIES[model.id] ?? {
         tools: true,
         vision: false,
         reasoning: false,
@@ -89,7 +89,7 @@ export async function getAllGatewayModels(): Promise<
 > {
   return chatModels.map((model) => ({
     ...model,
-    capabilities: GEMINI_CAPABILITIES[model.id] ?? {
+    capabilities: GROQ_CAPABILITIES[model.id] ?? {
       tools: true,
       vision: false,
       reasoning: false,
