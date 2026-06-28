@@ -1,11 +1,10 @@
-export const DEFAULT_CHAT_MODEL = "moonshotai/kimi-k2.5";
+export const DEFAULT_CHAT_MODEL = "gemini-2.0-flash";
 
 export const titleModel = {
-  id: "moonshotai/kimi-k2.5",
-  name: "Kimi K2.5",
-  provider: "moonshotai",
+  id: "gemini-2.0-flash-lite",
+  name: "Gemini 2.0 Flash Lite",
+  provider: "google",
   description: "Fast model for title generation",
-  gatewayOrder: ["fireworks", "bedrock"],
 };
 
 export type ModelCapabilities = {
@@ -25,85 +24,51 @@ export type ChatModel = {
 
 export const chatModels: ChatModel[] = [
   {
-    id: "deepseek/deepseek-v3.2",
-    name: "DeepSeek V3.2",
-    provider: "deepseek",
-    description: "Fast and capable model with tool use",
-    gatewayOrder: ["bedrock", "deepinfra"],
+    id: "gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
+    provider: "google",
+    description: "Fast and capable model with tool use and vision",
   },
   {
-    id: "moonshotai/kimi-k2.5",
-    name: "Kimi K2.5",
-    provider: "moonshotai",
-    description: "Moonshot AI flagship model",
-    gatewayOrder: ["fireworks", "bedrock"],
+    id: "gemini-2.0-flash-lite",
+    name: "Gemini 2.0 Flash Lite",
+    provider: "google",
+    description: "Lightweight, fastest model for everyday tasks",
   },
   {
-    id: "openai/gpt-oss-20b",
-    name: "GPT OSS 20B",
-    provider: "openai",
-    description: "Compact reasoning model",
-    gatewayOrder: ["groq", "bedrock"],
-    reasoningEffort: "low",
+    id: "gemini-1.5-flash",
+    name: "Gemini 1.5 Flash",
+    provider: "google",
+    description: "Balanced speed and quality with long context",
   },
   {
-    id: "openai/gpt-oss-120b",
-    name: "GPT OSS 120B",
-    provider: "openai",
-    description: "Open-source 120B parameter model",
-    gatewayOrder: ["fireworks", "bedrock"],
-    reasoningEffort: "low",
-  },
-  {
-    id: "xai/grok-4.1-fast-non-reasoning",
-    name: "Grok 4.1 Fast",
-    provider: "xai",
-    description: "Fast non-reasoning model with tool use",
-    gatewayOrder: ["xai"],
+    id: "gemini-1.5-pro",
+    name: "Gemini 1.5 Pro",
+    provider: "google",
+    description: "Most capable model for complex reasoning",
   },
 ];
+
+const GEMINI_CAPABILITIES: Record<string, ModelCapabilities> = {
+  "gemini-2.0-flash": { tools: true, vision: true, reasoning: false },
+  "gemini-2.0-flash-lite": { tools: true, vision: true, reasoning: false },
+  "gemini-1.5-flash": { tools: true, vision: true, reasoning: false },
+  "gemini-1.5-pro": { tools: true, vision: true, reasoning: false },
+};
 
 export async function getCapabilities(): Promise<
   Record<string, ModelCapabilities>
 > {
-  const results = await Promise.all(
-    chatModels.map(async (model) => {
-      try {
-        const res = await fetch(
-          `https://ai-gateway.vercel.sh/v1/models/${model.id}/endpoints`,
-          { next: { revalidate: 86_400 } }
-        );
-        if (!res.ok) {
-          return [model.id, { tools: false, vision: false, reasoning: false }];
-        }
-
-        const json = await res.json();
-        const endpoints = json.data?.endpoints ?? [];
-        const params = new Set(
-          endpoints.flatMap(
-            (e: { supported_parameters?: string[] }) =>
-              e.supported_parameters ?? []
-          )
-        );
-        const inputModalities = new Set(
-          json.data?.architecture?.input_modalities ?? []
-        );
-
-        return [
-          model.id,
-          {
-            tools: params.has("tools"),
-            vision: inputModalities.has("image"),
-            reasoning: params.has("reasoning"),
-          },
-        ];
-      } catch {
-        return [model.id, { tools: false, vision: false, reasoning: false }];
-      }
-    })
+  return Object.fromEntries(
+    chatModels.map((model) => [
+      model.id,
+      GEMINI_CAPABILITIES[model.id] ?? {
+        tools: true,
+        vision: false,
+        reasoning: false,
+      },
+    ])
   );
-
-  return Object.fromEntries(results);
 }
 
 export const isDemo = process.env.IS_DEMO === "1";
@@ -122,31 +87,14 @@ export type GatewayModelWithCapabilities = ChatModel & {
 export async function getAllGatewayModels(): Promise<
   GatewayModelWithCapabilities[]
 > {
-  try {
-    const res = await fetch("https://ai-gateway.vercel.sh/v1/models", {
-      next: { revalidate: 86_400 },
-    });
-    if (!res.ok) {
-      return [];
-    }
-
-    const json = await res.json();
-    return (json.data ?? [])
-      .filter((m: GatewayModel) => m.type === "language")
-      .map((m: GatewayModel) => ({
-        id: m.id,
-        name: m.name,
-        provider: m.id.split("/")[0],
-        description: "",
-        capabilities: {
-          tools: m.tags?.includes("tool-use") ?? false,
-          vision: m.tags?.includes("vision") ?? false,
-          reasoning: m.tags?.includes("reasoning") ?? false,
-        },
-      }));
-  } catch {
-    return [];
-  }
+  return chatModels.map((model) => ({
+    ...model,
+    capabilities: GEMINI_CAPABILITIES[model.id] ?? {
+      tools: true,
+      vision: false,
+      reasoning: false,
+    },
+  }));
 }
 
 export function getActiveModels(): ChatModel[] {
